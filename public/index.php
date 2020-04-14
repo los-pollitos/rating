@@ -34,11 +34,11 @@ $app = new Micro($container);
 $app->post(
     '/crear_url',
     function () use ($app) {
-        $url = $app->request->getJsonRawBody();
+        $newUrl = $app->request->getPost();
         $phql = 'INSERT INTO MyApp\Models\Url '
-               .'(id, url) '
+               .'(url) '
                .'VALUES '
-               .'(:id:, :url:)'
+               .'(:url:)'
         ;
 
         $status = $app
@@ -46,8 +46,7 @@ $app->post(
             ->executeQuery(
                 $phql,
                 [
-                    'id' => $url->id,
-                    'url' => $url->url,
+                    'url' => $newUrl['url'],
                 ]
             )
         ;
@@ -56,12 +55,12 @@ $app->post(
         if (true === $status->success()) {
             $response->setStatusCode(201, 'Created');
 
-            $url->id = $status->getModel()->id;
+            $newUrl->id = $status->getModel()->id;
 
             $response->setJsonContent(
                 [
                     'status' => 'OK',
-                    'data' => $url,
+                    'data' => $newUrl,
                 ]
             );
         } else {
