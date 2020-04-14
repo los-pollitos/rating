@@ -5,6 +5,8 @@ use Phalcon\Di\FactoryDefault;
 use Phalcon\Http\Response;
 use Phalcon\Loader;
 use Phalcon\Mvc\Micro;
+use Phalcon\Mvc\View;
+use Phalcon\Mvc\View\Engine\Volt;
 
 $loader = new Loader();
 $loader->registerNamespaces(
@@ -26,6 +28,39 @@ $container->set(
                 'dbname' => 'rating',
             ]
         );
+    }
+);
+
+$container->set(
+    'voltService',
+    function ($view, $container) {
+        $volt = new Volt($view, $container);
+
+        $volt->setOptions(
+            [
+                'compiledPath'      => '../app/compiled-templates/',
+                'compiledExtension' => '.compiled',
+            ]
+        );
+
+        return $volt;
+    }
+);
+
+$container->set(
+    'view',
+    function () {
+        $view = new View();
+
+        $view->setViewsDir('../app/views/');
+
+        $view->registerEngines(
+            [
+                '.volt' => 'voltService',
+            ]
+        );
+
+        return $view;
     }
 );
 
@@ -80,6 +115,40 @@ $app->post(
         }
 
         return $response;
+    }
+);
+
+$app->post(
+    '/read_url',
+    function () use ($app) {
+        $url = $app->request->getPost();
+        $phql = 'SELECT * FROM MyApp\Models\Url '
+        .'WHERE url LIKE :url: ORDER BY url';
+
+        $urlData = $app->modelsManager->executeQuery(
+            $phql,
+            [
+                'url' => '%' . $url['url'] . '%'
+            ]
+        );
+
+        $confirm = '';
+
+        foreach ($urlData as $item) {
+            $confirm = $item->url;
+        }
+        $response = new Response();
+        if ($confirm === $url['url'] ) {
+            //Hacer que renderice el template con volt
+            echo 'entro';
+            
+            $app->view->setVar('url', $confirm);
+            $app->view->render('formulario','empty');
+            $app->view->finish();
+
+            print_r($app->view->getContent());die;
+            //=================================
+        }
     }
 );
 
