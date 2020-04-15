@@ -5,9 +5,9 @@
         </div>
     </div>
     <br>
-    <form action="server:port/create_comment/<?php echo $url ?> method="POST">
+    <form action="create_comment" method="POST">
         <div class="form-group">
-            
+            <input name="url" value="<?php echo $url ?>" hidden>
             <textarea class="form-control" name="comment" rows="3" placeholder="Escribe tu comentario..."></textarea>
             <div class="rate">
                 <input type="radio" id="star5" name="score" value="5" />

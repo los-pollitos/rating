@@ -25,7 +25,7 @@ curl --data "url=https://www.google.com/" localhost/read_url
 
 Agregar un comentario al sistema.
 ```
-curl --data "comment=Excelente servicio" --data "score=5"  localhost/create_comment/id
+curl --data "url=https://www.google.com/" --data "comment=Excelente servicio" --data "score=5"  localhost/create_comment
 ```
 
 - [x] Microservicio de Urls

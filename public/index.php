@@ -96,8 +96,8 @@ $app->post(
 );
 
 $app->post(
-    '/create_comment/{url_id}',
-    function ($url_id) use ($app) {
+    '/create_comment',
+    function () use ($app) {
         $newComment = $app->request->getPost();
         $phql = 'INSERT INTO MyApp\Models\Comentario '
                .'(url_id, comment, score) '
@@ -110,7 +110,7 @@ $app->post(
             ->executeQuery(
                 $phql,
                 [
-                    'url_id' => $url_id,
+                    'url_id' => $newComment['url'],
                     'comment' => $newComment['comment'],
                     'score' => $newComment['score'],
                 ]
@@ -172,9 +172,23 @@ $app->post(
         $stringHtml = '';
 
         if ($confirm === $url['url']) {
-            $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
+
+            //Saca el promedio de los comentarios
+            $phqlAvg = 'SELECT AVG(score) FROM MyApp\Models\Comentario '
                 .'WHERE url_id = :url:';
-            
+
+            $avgScore = $app->modelsManager->executeQuery(
+                $phqlAvg,
+                [
+                    'url' => $confirm,
+                ]
+            );
+            $avgScore = (round($avgScore[0]->readAttribute("0"), 1));
+
+            //busca los primeros 10 comentarios
+            $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
+                .'WHERE url_id = :url: LIMIT 10';
+
             $comments = $app->modelsManager->executeQuery(
                 $phqlSearchComment,
                 [
@@ -199,9 +213,8 @@ $app->post(
                     ]
                 );
             } else {
-                $commentCount = 0;
-                $commentScore = 0;
                 $templatesComments = '';
+
                 foreach ($data as $comment) {
                     $templatesComments .= $app->view->render(
                         'formulario/comment',
@@ -210,15 +223,12 @@ $app->post(
                             'score' => $comment[1],
                         ]
                     );
-                    $commentCount += 1;
-                    $commentScore += $comment[1];
                 }
-                $promScore = $commentScore / $commentCount;
                 $contenido = $app->view->render(
                     'formulario/some',
                     [
                         'url'   => $confirm,
-                        'score' => $promScore,
+                        'score' => $avgScore,
                         'content' => $templatesComments,
                     ]
                 );

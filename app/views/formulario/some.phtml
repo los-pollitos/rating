@@ -3,13 +3,15 @@
         <div class="card-body">
             <div class="text-center"><h1 class="p-2"><?php echo $score ?><span style="color: #deb217">★</span></h1></div>
             <hr>
-            <?php echo $content ?>
+            <div style="overflow-y:auto;max-height: 12rem;padding-right: 1rem;">
+                <?php echo $content ?>
+            </div>
         </div>
     </div>
     <br>
-    <form action="server:port/crearComentario/<?php echo $url ?> method="POST">
+    <form action="crearComentario" method="POST">
         <div class="form-group">
-            
+            <input name="url" value="<?php echo $url ?>" hidden>
             <textarea class="form-control" name="comment" rows="3" placeholder="Escribe tu comentario..."></textarea>
             <div class="rate">
                 <input type="radio" id="star5" name="score" value="5" />
