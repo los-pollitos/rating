@@ -53,20 +53,20 @@
                 </div>
             </div>
             <br>
-            <form action="server:port/crearComentario/<?php echo $url ?> method="POST">
+            <form action="server:port/create_comment/<?php echo $url ?> method="POST">
                 <div class="form-group">
                     
-                    <textarea class="form-control" rows="3" placeholder="Escribe tu comentario..."></textarea>
+                    <textarea class="form-control" name="comment" rows="3" placeholder="Escribe tu comentario..."></textarea>
                     <div class="rate">
-                        <input type="radio" id="star5" name="rate" value="5" />
+                        <input type="radio" id="star5" name="score" value="5" />
                         <label for="star5" title="text">5 stars</label>
-                        <input type="radio" id="star4" name="rate" value="4" />
+                        <input type="radio" id="star4" name="score" value="4" />
                         <label for="star4" title="text">4 stars</label>
-                        <input type="radio" id="star3" name="rate" value="3" />
+                        <input type="radio" id="star3" name="score" value="3" />
                         <label for="star3" title="text">3 stars</label>
-                        <input type="radio" id="star2" name="rate" value="2" />
+                        <input type="radio" id="star2" name="score" value="2" />
                         <label for="star2" title="text">2 stars</label>
-                        <input type="radio" id="star1" name="rate" value="1" />
+                        <input type="radio" id="star1" name="score" value="1" />
                         <label for="star1" title="text">1 star</label>
                       </div>
                     <button type="button" class="btn btn-primary float-right w-50 m-2">Post</button>

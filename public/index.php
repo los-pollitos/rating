@@ -44,7 +44,7 @@ $container->set(
 $app = new Micro($container);
 
 $app->post(
-    '/crear_url',
+    '/create_url',
     function () use ($app) {
         $newUrl = $app->request->getPost();
         $phql = 'INSERT INTO MyApp\Models\Url '
@@ -73,6 +73,60 @@ $app->post(
                 [
                     'status' => 'OK',
                     'data' => $newUrl,
+                ]
+            );
+        } else {
+            $response->setStatusCode(409, 'Conflict');
+
+            $errors = [];
+            foreach ($status->getMessages() as $message) {
+                $errors[] = $message->getMessage();
+            }
+
+            $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => $errors,
+                ]
+            );
+        }
+
+        return $response;
+    }
+);
+
+$app->post(
+    '/create_comment/{url_id}',
+    function ($url_id) use ($app) {
+        $newComment = $app->request->getPost();
+        $phql = 'INSERT INTO MyApp\Models\Comentario '
+               .'(url_id, comment, score) '
+               .'VALUES '
+               .'(:url_id:, :comment:, :score:)'
+        ;
+
+        $status = $app
+            ->modelsManager
+            ->executeQuery(
+                $phql,
+                [
+                    'url_id' => $url_id,
+                    'comment' => $newComment['comment'],
+                    'score' => $newComment['score'],
+                ]
+            )
+        ;
+        $response = new Response();
+
+        if (true === $status->success()) {
+            $response->setStatusCode(201, 'Created');
+
+            $newComment->id = $status->getModel()->id;
+
+            $response->setJsonContent(
+                [
+                    'status' => 'OK',
+                    'data' => $newComment,
                 ]
             );
         } else {
