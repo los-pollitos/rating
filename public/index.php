@@ -172,16 +172,67 @@ $app->post(
         $stringHtml = '';
 
         if ($confirm === $url['url']) {
-            $stringHtml = $app->view->render(
-                'formulario/empty',
+            $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
+                .'WHERE url_id = :url:';
+            
+            $comments = $app->modelsManager->executeQuery(
+                $phqlSearchComment,
                 [
-                    'url'   => $confirm,
+                    'url' => $confirm,
+                ]
+            );
+
+            $data = [];
+            foreach ($comments as $comment) {
+                $data [] =
+                    [
+                        $comment->comment,
+                        $comment->score,
+                    ];
+            }
+
+            if (empty($data)) {
+                $contenido = $app->view->render(
+                    'formulario/empty',
+                    [
+                        'url'   => $confirm,
+                    ]
+                );
+            } else {
+                $commentCount = 0;
+                $commentScore = 0;
+                $templatesComments = '';
+                foreach ($data as $comment) {
+                    $templatesComments .= $app->view->render(
+                        'formulario/comment',
+                        [
+                            'comment'   => $comment[0],
+                            'score' => $comment[1],
+                        ]
+                    );
+                    $commentCount += 1;
+                    $commentScore += $comment[1];
+                }
+                $promScore = $commentScore / $commentCount;
+                $contenido = $app->view->render(
+                    'formulario/some',
+                    [
+                        'url'   => $confirm,
+                        'score' => $promScore,
+                        'content' => $templatesComments,
+                    ]
+                );
+            }
+
+            $stringHtml = $app->view->render(
+                'formulario/base',
+                [
+                    'contenido'   => $contenido,
                 ]
             );
         }
 
         return $stringHtml;
-
     }
 );
 
