@@ -5,8 +5,7 @@ use Phalcon\Di\FactoryDefault;
 use Phalcon\Http\Response;
 use Phalcon\Loader;
 use Phalcon\Mvc\Micro;
-use Phalcon\Mvc\View;
-use Phalcon\Mvc\View\Engine\Volt;
+use Phalcon\Mvc\View\Simple;
 
 $loader = new Loader();
 $loader->registerNamespaces(
@@ -30,35 +29,13 @@ $container->set(
         );
     }
 );
-//Set de volt 
-$container->set(
-    'voltService',
-    function ($view, $container) {
-        $volt = new Volt($view, $container);
-
-        $volt->setOptions(
-            [
-                'compiledPath'      => '../app/compiled-templates/',
-                'compiledExtension' => '.compiled',
-            ]
-        );
-
-        return $volt;
-    }
-);
 
 $container->set(
     'view',
     function () {
-        $view = new View();
+        $view =  new Simple();
 
         $view->setViewsDir('../app/views/');
-
-        $view->registerEngines(
-            [
-                '.volt' => 'voltService',
-            ]
-        );
 
         return $view;
     }
@@ -137,18 +114,20 @@ $app->post(
         foreach ($urlData as $item) {
             $confirm = $item->url;
         }
-        $response = new Response();
-        if ($confirm === $url['url'] ) {
-            //Hacer que renderice el template con volt
-            echo 'entro';
-            
-            $app->view->setVar('url', $confirm);
-            $app->view->render('formulario','empty');
-            $app->view->finish();
 
-            print_r($app->view->getContent());die;
-            //=================================
+        $stringHtml = '';
+
+        if ($confirm === $url['url']) {
+            $stringHtml = $app->view->render(
+                'formulario/empty',
+                [
+                    'url'   => $confirm,
+                ]
+            );
         }
+
+        return $stringHtml;
+
     }
 );
 

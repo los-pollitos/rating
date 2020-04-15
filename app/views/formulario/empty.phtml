@@ -1,4 +1,3 @@
-{# app/compiled-templates/empty.volt #}
 <html>
     <head>
         <meta charset="UTF-8">
@@ -54,7 +53,7 @@
                 </div>
             </div>
             <br>
-            <form action="server:port/crearComentario/{{url}}" method="POST">
+            <form action="server:port/crearComentario/<?php echo $url ?> method="POST">
                 <div class="form-group">
                     
                     <textarea class="form-control" rows="3" placeholder="Escribe tu comentario..."></textarea>
