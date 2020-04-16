@@ -34,7 +34,6 @@ $container->set(
     'view',
     function () {
         $view =  new Simple();
-
         $view->setViewsDir('../app/views/');
 
         return $view;
@@ -75,43 +74,44 @@ $app->post(
                 ]
             )
         ;
+
         $response = new Response();
-        if($numberOfResults < 1){
-            if ($status->success()) {
-                $response->setStatusCode(201, 'Created');
-    
-                $newUrl->id = $status->getModel()->id;
-    
-                $response->setJsonContent(
-                    [
-                        'status' => 'OK',
-                        'data' => $newUrl,
-                    ]
-                );
-            } else {
-                $response->setStatusCode(409, 'Conflict');
-    
-                $errors = [];
-                foreach ($status->getMessages() as $message) {
-                    $errors[] = $message->getMessage();
-                }
-    
-                $response->setJsonContent(
-                    [
-                        'status' => 'ERROR',
-                        'messages' => $errors,
-                    ]
-                );
-            }
-        }else{
-            $response->setJsonContent(
+
+        if ($numberOfResults > 1) {
+            return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
                     'messages' => 'Esa url ya esta registrada',
                 ]
             );
-        }            
+        }
         
+        if ($status->success()) {
+            $response->setStatusCode(201, 'Created');
+
+            $newUrl->id = $status->getModel()->id;
+
+            $response->setJsonContent(
+                [
+                    'status' => 'OK',
+                    'data' => $newUrl,
+                ]
+            );
+        } else {
+            $response->setStatusCode(409, 'Conflict');
+
+            $errors = [];
+            foreach ($status->getMessages() as $message) {
+                $errors[] = $message->getMessage();
+            }
+
+            $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => $errors,
+                ]
+            );
+        }
 
         return $response;
     }
@@ -153,42 +153,41 @@ $app->post(
             )
         ;
         $response = new Response();
-        if($numberOfResults > 0){
-            if ($status->success()) {
-                        $response->setStatusCode(201, 'Created');
-
-                        $newComment->id = $status->getModel()->id;
-
-                        $response->setJsonContent(
-                            [
-                                'status' => 'OK',
-                                'data' => $newComment,
-                            ]
-                        );
-                    } else {
-                        $response->setStatusCode(409, 'Conflict');
-
-                        $errors = [];
-                        foreach ($status->getMessages() as $message) {
-                            $errors[] = $message->getMessage();
-                        }
-
-                        $response->setJsonContent(
-                            [
-                                'status' => 'ERROR',
-                                'messages' => $errors,
-                            ]
-                        );
-                    }
-        }else{
-            $response->setJsonContent(
+        if ($numberOfResults < 0) {
+            return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
                     'messages' => 'Url is not in database.',
                 ]
             );
         }
-        
+
+        if ($status->success()) {
+            $response->setStatusCode(201, 'Created');
+
+            $newComment->id = $status->getModel()->id;
+
+            $response->setJsonContent(
+                [
+                            'status' => 'OK',
+                            'data' => $newComment,
+                        ]
+            );
+        } else {
+            $response->setStatusCode(409, 'Conflict');
+
+            $errors = [];
+            foreach ($status->getMessages() as $message) {
+                $errors[] = $message->getMessage();
+            }
+
+            $response->setJsonContent(
+                [
+                            'status' => 'ERROR',
+                            'messages' => $errors,
+                        ]
+            );
+        }
 
         return $response;
     }
@@ -198,6 +197,7 @@ $app->post(
     '/read_url',
     function () use ($app) {
         $url = $app->request->getPost();
+
         $phql = 'SELECT * FROM MyApp\Models\Url '
         .'WHERE url LIKE :url: ORDER BY url';
 
@@ -208,95 +208,95 @@ $app->post(
             ]
         );
 
-        
         $confirm = '';
-        
         foreach ($urlData as $item) {
             $confirm = $item->url;
         }
         
-        $stringHtml = '';
+        
         if ($confirm === '') {
             $response = new Response();
             return $response->setJsonContent(
                 [
-                'status' => 'ERROR',
-                'messages' => 'Url is not in database.',
-            ]
-            );
+                    'status' => 'ERROR',
+                    'messages' => 'Url is not in database.',
+                    ]
+                );
         }
+
         if ($confirm === $url['url']) {
+            $stringHtml = '';
 
-            //Saca el promedio de los comentarios
-            $phqlAvg = 'SELECT AVG(score) FROM MyApp\Models\Comentario '
-                .'WHERE url_id = :url:';
+        //Saca el promedio de los comentarios
+        $phqlAvg = 'SELECT AVG(score) FROM MyApp\Models\Comentario '
+            .'WHERE url_id = :url:';
 
-            $avgScore = $app->modelsManager->executeQuery(
-                $phqlAvg,
+        $avgScore = $app->modelsManager->executeQuery(
+            $phqlAvg,
+            [
+                'url' => $confirm,
+            ]
+        );
+        $avgScore = (round($avgScore[0]->readAttribute("0"), 1));
+
+        //busca los primeros 10 comentarios
+        $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
+            .'WHERE url_id = :url: LIMIT 10';
+
+        $comments = $app->modelsManager->executeQuery(
+            $phqlSearchComment,
+            [
+                'url' => $confirm,
+            ]
+        );
+
+        $data = [];
+        foreach ($comments as $comment) {
+            $data [] =
                 [
-                    'url' => $confirm,
+                    $comment->comment,
+                    $comment->score,
+                ];
+        }
+
+        if (empty($data)) {
+            $contenido = $app->view->render(
+                'formulario/empty',
+                [
+                    'url'   => $confirm,
                 ]
             );
-            $avgScore = (round($avgScore[0]->readAttribute("0"), 1));
+        } else {
+            $templatesComments = '';
 
-            //busca los primeros 10 comentarios
-            $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
-                .'WHERE url_id = :url: LIMIT 10';
-
-            $comments = $app->modelsManager->executeQuery(
-                $phqlSearchComment,
-                [
-                    'url' => $confirm,
-                ]
-            );
-
-            $data = [];
-            foreach ($comments as $comment) {
-                $data [] =
+            foreach ($data as $comment) {
+                $templatesComments .= $app->view->render(
+                    'formulario/comment',
                     [
-                        $comment->comment,
-                        $comment->score,
-                    ];
-            }
-
-            if (empty($data)) {
-                $contenido = $app->view->render(
-                    'formulario/empty',
-                    [
-                        'url'   => $confirm,
-                    ]
-                );
-            } else {
-                $templatesComments = '';
-
-                foreach ($data as $comment) {
-                    $templatesComments .= $app->view->render(
-                        'formulario/comment',
-                        [
-                            'comment'   => $comment[0],
-                            'score' => $comment[1],
-                        ]
-                    );
-                }
-                $contenido = $app->view->render(
-                    'formulario/some',
-                    [
-                        'url'   => $confirm,
-                        'score' => $avgScore,
-                        'content' => $templatesComments,
+                        'comment'   => $comment[0],
+                        'score' => $comment[1],
                     ]
                 );
             }
-
-            $stringHtml = $app->view->render(
-                'formulario/base',
+            $contenido = $app->view->render(
+                'formulario/some',
                 [
-                    'contenido'   => $contenido,
+                    'url'   => $confirm,
+                    'score' => $avgScore,
+                    'content' => $templatesComments,
                 ]
             );
         }
 
+        $stringHtml = $app->view->render(
+            'formulario/base',
+            [
+                'contenido'   => $contenido,
+            ]
+        );
         return $stringHtml;
+    }
+
     }
 );
 
