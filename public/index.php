@@ -47,6 +47,15 @@ $app->post(
     function () use ($app) {
         $newUrl = $app->request->getPost();
 
+        if(empty($newURl['url'])){
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Debes ingresar una url.',
+                ]
+            );
+        }
+
         $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
         .'WHERE url = :url:';
 
@@ -118,85 +127,18 @@ $app->post(
 );
 
 $app->post(
-    '/create_comment',
-    function () use ($app) {
-        $newComment = $app->request->getPost();
-
-        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
-        .'WHERE url = :url:';
-
-        $checkQuery = $app->modelsManager->executeQuery(
-            $checkUrl,
-            [
-                'url' => $newComment['url'],
-            ]
-        );
-
-        $numberOfResults=($checkQuery[0]->readAttribute("0"));
-
-
-        $phql = 'INSERT INTO MyApp\Models\Comentario '
-               .'(url_id, comment, score) '
-               .'VALUES '
-               .'(:url_id:, :comment:, :score:)'
-        ;
-
-        $status = $app
-            ->modelsManager
-            ->executeQuery(
-                $phql,
-                [
-                    'url_id' => $newComment['url'],
-                    'comment' => $newComment['comment'],
-                    'score' => $newComment['score'],
-                ]
-            )
-        ;
-        $response = new Response();
-        if ($numberOfResults < 0) {
-            return $response->setJsonContent(
-                [
-                    'status' => 'ERROR',
-                    'messages' => 'Url is not in database.',
-                ]
-            );
-        }
-
-        if ($status->success()) {
-            $response->setStatusCode(201, 'Created');
-
-            $newComment->id = $status->getModel()->id;
-
-            $response->setJsonContent(
-                [
-                            'status' => 'OK',
-                            'data' => $newComment,
-                        ]
-            );
-        } else {
-            $response->setStatusCode(409, 'Conflict');
-
-            $errors = [];
-            foreach ($status->getMessages() as $message) {
-                $errors[] = $message->getMessage();
-            }
-
-            $response->setJsonContent(
-                [
-                            'status' => 'ERROR',
-                            'messages' => $errors,
-                        ]
-            );
-        }
-
-        return $response;
-    }
-);
-
-$app->post(
     '/read_url',
     function () use ($app) {
         $url = $app->request->getPost();
+
+        if(empty($url['url'])){
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Debes ingresar una url.',
+                ]
+            );
+        }
 
         $phql = 'SELECT * FROM MyApp\Models\Url '
         .'WHERE url LIKE :url: ORDER BY url';
@@ -297,6 +239,100 @@ $app->post(
         return $stringHtml;
     }
 
+    }
+);
+
+$app->post(
+    '/create_comment',
+    function () use ($app) {
+        $newComment = $app->request->getPost();
+
+        if(empty($newComment['url'])){
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Debes ingresar una url.',
+                ]
+            );
+        }
+
+        if(empty($newComment['score'])){
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Debes ingresar una valoracion.',
+                ]
+            );
+        }
+
+        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
+        .'WHERE url = :url:';
+
+        $checkQuery = $app->modelsManager->executeQuery(
+            $checkUrl,
+            [
+                'url' => $newComment['url'],
+            ]
+        );
+
+        $numberOfResults=($checkQuery[0]->readAttribute("0"));
+
+
+        $phql = 'INSERT INTO MyApp\Models\Comentario '
+               .'(url_id, comment, score) '
+               .'VALUES '
+               .'(:url_id:, :comment:, :score:)'
+        ;
+
+        $status = $app
+            ->modelsManager
+            ->executeQuery(
+                $phql,
+                [
+                    'url_id' => $newComment['url'],
+                    'comment' => $newComment['comment'],
+                    'score' => $newComment['score'],
+                ]
+            )
+        ;
+        $response = new Response();
+        if ($numberOfResults < 0) {
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Url is not in database.',
+                ]
+            );
+        }
+
+        if ($status->success()) {
+            $response->setStatusCode(201, 'Created');
+
+            $newComment->id = $status->getModel()->id;
+
+            $response->setJsonContent(
+                [
+                            'status' => 'OK',
+                            'data' => $newComment,
+                        ]
+            );
+        } else {
+            $response->setStatusCode(409, 'Conflict');
+
+            $errors = [];
+            foreach ($status->getMessages() as $message) {
+                $errors[] = $message->getMessage();
+            }
+
+            $response->setJsonContent(
+                [
+                            'status' => 'ERROR',
+                            'messages' => $errors,
+                        ]
+            );
+        }
+
+        return $response;
     }
 );
 
