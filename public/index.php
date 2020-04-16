@@ -99,6 +99,20 @@ $app->post(
     '/create_comment',
     function () use ($app) {
         $newComment = $app->request->getPost();
+
+        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
+        .'WHERE url LIKE :url:';
+
+        $checkQuery = $app->modelsManager->executeQuery(
+            $checkUrl,
+            [
+                'url' => $newComment['url'],
+            ]
+        );
+
+        $numberOfResults=($checkQuery[0]->readAttribute("0"));
+
+
         $phql = 'INSERT INTO MyApp\Models\Comentario '
                .'(url_id, comment, score) '
                .'VALUES '
@@ -117,33 +131,42 @@ $app->post(
             )
         ;
         $response = new Response();
+        if($numberOfResults > 0){
+            if ($status->success()) {
+                        $response->setStatusCode(201, 'Created');
 
-        if (true === $status->success()) {
-            $response->setStatusCode(201, 'Created');
+                        $newComment->id = $status->getModel()->id;
 
-            $newComment->id = $status->getModel()->id;
+                        $response->setJsonContent(
+                            [
+                                'status' => 'OK',
+                                'data' => $newComment,
+                            ]
+                        );
+                    } else {
+                        $response->setStatusCode(409, 'Conflict');
 
-            $response->setJsonContent(
-                [
-                    'status' => 'OK',
-                    'data' => $newComment,
-                ]
-            );
-        } else {
-            $response->setStatusCode(409, 'Conflict');
+                        $errors = [];
+                        foreach ($status->getMessages() as $message) {
+                            $errors[] = $message->getMessage();
+                        }
 
-            $errors = [];
-            foreach ($status->getMessages() as $message) {
-                $errors[] = $message->getMessage();
-            }
-
+                        $response->setJsonContent(
+                            [
+                                'status' => 'ERROR',
+                                'messages' => $errors,
+                            ]
+                        );
+                    }
+        }else{
             $response->setJsonContent(
                 [
                     'status' => 'ERROR',
-                    'messages' => $errors,
+                    'messages' => 'Url is not in database',
                 ]
             );
         }
+        
 
         return $response;
     }
