@@ -68,6 +68,17 @@ $app->post(
 
         $numberOfResults=($checkQuery[0]->readAttribute("0"));
 
+        $response = new Response();
+
+        if ($numberOfResults > 1) {
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Esa url ya esta registrada',
+                ]
+            );
+        }
+
         $phql = 'INSERT INTO MyApp\Models\Url '
                .'(url) '
                .'VALUES '
@@ -84,16 +95,7 @@ $app->post(
             )
         ;
 
-        $response = new Response();
 
-        if ($numberOfResults > 1) {
-            return $response->setJsonContent(
-                [
-                    'status' => 'ERROR',
-                    'messages' => 'Esa url ya esta registrada',
-                ]
-            );
-        }
         
         if ($status->success()) {
             $response->setStatusCode(201, 'Created');
