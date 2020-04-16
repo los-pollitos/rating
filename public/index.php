@@ -248,7 +248,8 @@ $app->post(
     '/create_comment',
     function () use ($app) {
         $newComment = $app->request->getPost();
-
+        
+        $response = new Response();
         if(empty($newComment['url'])){
             return $response->setJsonContent(
                 [
@@ -279,6 +280,14 @@ $app->post(
 
         $numberOfResults=($checkQuery[0]->readAttribute("0"));
 
+        if ($numberOfResults < 0) {
+            return $response->setJsonContent(
+                [
+                    'status' => 'ERROR',
+                    'messages' => 'Url is not in database.',
+                ]
+            );
+        }
 
         $phql = 'INSERT INTO MyApp\Models\Comentario '
                .'(url_id, comment, score) '
@@ -297,15 +306,6 @@ $app->post(
                 ]
             )
         ;
-        $response = new Response();
-        if ($numberOfResults < 0) {
-            return $response->setJsonContent(
-                [
-                    'status' => 'ERROR',
-                    'messages' => 'Url is not in database.',
-                ]
-            );
-        }
 
         if ($status->success()) {
             $response->setStatusCode(201, 'Created');
