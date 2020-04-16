@@ -30,4 +30,4 @@ curl --data "url=https://www.google.com/" --data "comment=Excelente servicio" --
 
 - [x] Microservicio de Urls
 - [ ] Microservicio de Comentarios
-- [ ] Microservicio de templates
+- [x] Microservicio de templates
