@@ -47,6 +47,19 @@ $app->post(
     '/create_url',
     function () use ($app) {
         $newUrl = $app->request->getPost();
+
+        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
+        .'WHERE url = :url:';
+
+        $checkQuery = $app->modelsManager->executeQuery(
+            $checkUrl,
+            [
+                'url' => $newUrl['url'],
+            ]
+        );
+
+        $numberOfResults=($checkQuery[0]->readAttribute("0"));
+
         $phql = 'INSERT INTO MyApp\Models\Url '
                .'(url) '
                .'VALUES '
@@ -63,33 +76,42 @@ $app->post(
             )
         ;
         $response = new Response();
-
-        if (true === $status->success()) {
-            $response->setStatusCode(201, 'Created');
-
-            $newUrl->id = $status->getModel()->id;
-
-            $response->setJsonContent(
-                [
-                    'status' => 'OK',
-                    'data' => $newUrl,
-                ]
-            );
-        } else {
-            $response->setStatusCode(409, 'Conflict');
-
-            $errors = [];
-            foreach ($status->getMessages() as $message) {
-                $errors[] = $message->getMessage();
+        if($numberOfResults < 1){
+            if ($status->success()) {
+                $response->setStatusCode(201, 'Created');
+    
+                $newUrl->id = $status->getModel()->id;
+    
+                $response->setJsonContent(
+                    [
+                        'status' => 'OK',
+                        'data' => $newUrl,
+                    ]
+                );
+            } else {
+                $response->setStatusCode(409, 'Conflict');
+    
+                $errors = [];
+                foreach ($status->getMessages() as $message) {
+                    $errors[] = $message->getMessage();
+                }
+    
+                $response->setJsonContent(
+                    [
+                        'status' => 'ERROR',
+                        'messages' => $errors,
+                    ]
+                );
             }
-
+        }else{
             $response->setJsonContent(
                 [
                     'status' => 'ERROR',
-                    'messages' => $errors,
+                    'messages' => 'Esa url ya esta registrada',
                 ]
             );
-        }
+        }            
+        
 
         return $response;
     }
@@ -101,7 +123,7 @@ $app->post(
         $newComment = $app->request->getPost();
 
         $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
-        .'WHERE url LIKE :url:';
+        .'WHERE url = :url:';
 
         $checkQuery = $app->modelsManager->executeQuery(
             $checkUrl,
@@ -162,7 +184,7 @@ $app->post(
             $response->setJsonContent(
                 [
                     'status' => 'ERROR',
-                    'messages' => 'Url is not in database',
+                    'messages' => 'Url is not in database.',
                 ]
             );
         }
@@ -186,14 +208,23 @@ $app->post(
             ]
         );
 
+        
         $confirm = '';
-
+        
         foreach ($urlData as $item) {
             $confirm = $item->url;
         }
-
+        
         $stringHtml = '';
-
+        if ($confirm === '') {
+            $response = new Response();
+            return $response->setJsonContent(
+                [
+                'status' => 'ERROR',
+                'messages' => 'Url is not in database.',
+            ]
+            );
+        }
         if ($confirm === $url['url']) {
 
             //Saca el promedio de los comentarios
