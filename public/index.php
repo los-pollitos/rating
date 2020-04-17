@@ -141,6 +141,23 @@ $app->post(
         if ($checkUrl->url === $url) {
             $stringHtml = '';
 
+            $numberOfComments = Comentario::count(
+                [
+                    "url_id = '$url'",
+                    'column' => 'score',
+                ]
+            );
+
+            if ($numberOfComments < 1) {
+                $contenido = $app->view->render(
+                    'formulario/empty',
+                    [
+                        'url'   => $url,
+                    ]
+                );
+
+            } else {
+
             //Saca el promedio de los comentarios
             $avgScore = Comentario::average(
                 [
@@ -159,15 +176,6 @@ $app->post(
                 ]
             );
 
-            if (count($comments) < 1) {
-                $contenido = $app->view->render(
-                    'formulario/empty',
-                    [
-                        'url'   => $url,
-                    ]
-                );
-
-            } else {
                 $templatesComments = '';
 
                 foreach ($comments as $comment) {
