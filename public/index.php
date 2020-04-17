@@ -6,35 +6,34 @@ use Phalcon\Http\Response;
 use Phalcon\Loader;
 use Phalcon\Mvc\Micro;
 use Phalcon\Mvc\View\Simple;
+use Phalcon\Config\Adapter\Ini;
+
+$config = new Ini('../config.ini');
 
 $loader = new Loader();
 $loader->registerNamespaces(
     [
-        'MyApp\Models' => '../app/models/',
+        'MyApp\Models' => $config->phalcon->modelsDir,
     ]
 );
+
 $loader->register();
 
 $container = new FactoryDefault();
 $container->set(
     'db',
-    function () {
+    function () use ($config) {
         return new Mysql(
-            [
-                'host' => 'db',
-                'username' => 'root',
-                'password' => 'root',
-                'dbname' => 'rating',
-            ]
+            $config->database->toArray()
         );
     }
 );
 
 $container->set(
     'view',
-    function () {
+    function () use ($config) {
         $view =  new Simple();
-        $view->setViewsDir('../app/views/');
+        $view->setViewsDir($config->phalcon->viewsDir);
 
         return $view;
     }
