@@ -3,6 +3,8 @@
 Framework: Phalcon 3.4
 Base de Datos: Mysql
 
+Antes de empezar crear archivo de configuracion dentro de la carpeta config.
+
 Para iniciar el servicio ejecutar el comando desde la carpeta rating:
 ```
 docker-compose up
