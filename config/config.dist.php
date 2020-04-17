@@ -1,12 +1,12 @@
 <?php
 
-$settings = [
+return [
     'database' => [
         'adapter'  => 'Mysql',
-        'host'     => 'db',
-        'username' => 'root',
-        'password' => 'root',
-        'dbname'   => 'rating'
+        'host'     => 'localhost',
+        'username' => 'yourname',
+        'password' => 'yourpassword',
+        'dbname'   => 'yourdatabse'
     ],
      'phalcon' => [
         'modelsDir'      => '../app/models/',

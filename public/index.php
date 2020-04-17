@@ -8,9 +8,7 @@ use Phalcon\Mvc\Micro;
 use Phalcon\Mvc\View\Simple;
 use Phalcon\Config;
 
-require('../config/config.php');
-
-$config = new Config($settings);
+$config = new Config(require '../config/config.php');
 
 $loader = new Loader();
 $loader->registerNamespaces(
