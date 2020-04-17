@@ -1,5 +1,7 @@
 <?php
 
+use MyApp\Models\Comentario;
+use MyApp\Models\Url;
 use Phalcon\Db\Adapter\Pdo\Mysql;
 use Phalcon\Di\FactoryDefault;
 use Phalcon\Http\Response;
@@ -37,6 +39,7 @@ $container->set(
         $view->setViewsDir('../app/views/');
 
         return $view;
+
     }
 );
 
@@ -45,9 +48,11 @@ $app = new Micro($container);
 $app->post(
     '/create_url',
     function () use ($app) {
-        $newUrl = $app->request->getPost();
+        $datos = $app->request->getPost();
+        $newURL = $datos['url'];
+        $response = new Response();
 
-        if(empty($newURl['url'])){
+        if (empty($newURL)) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -55,22 +60,13 @@ $app->post(
                 ]
             );
         }
-
-        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
-        .'WHERE url = :url:';
-
-        $checkQuery = $app->modelsManager->executeQuery(
-            $checkUrl,
+        $checkUrl = Url::findFirst(
             [
-                'url' => $newUrl['url'],
+                'url' => $newURL,
             ]
         );
 
-        $numberOfResults=($checkQuery[0]->readAttribute("0"));
-
-        $response = new Response();
-
-        if ($numberOfResults > 1) {
+        if ($checkUrl !== false) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -79,40 +75,23 @@ $app->post(
             );
         }
 
-        $phql = 'INSERT INTO MyApp\Models\Url '
-               .'(url) '
-               .'VALUES '
-               .'(:url:)'
-        ;
+        $url = new Url();
+        $url->url = $newURL;
 
-        $status = $app
-            ->modelsManager
-            ->executeQuery(
-                $phql,
-                [
-                    'url' => $newUrl['url'],
-                ]
-            )
-        ;
-
-
-        
-        if ($status->success()) {
+        if ($url->save()) {
             $response->setStatusCode(201, 'Created');
-
-            $newUrl->id = $status->getModel()->id;
 
             $response->setJsonContent(
                 [
                     'status' => 'OK',
-                    'data' => $newUrl,
+                    'data' => $url,
                 ]
             );
         } else {
             $response->setStatusCode(409, 'Conflict');
 
             $errors = [];
-            foreach ($status->getMessages() as $message) {
+            foreach ($url->getMessages() as $message) {
                 $errors[] = $message->getMessage();
             }
 
@@ -125,15 +104,18 @@ $app->post(
         }
 
         return $response;
+
     }
 );
 
 $app->post(
     '/read_url',
     function () use ($app) {
-        $url = $app->request->getPost();
+        $datos = $app->request->getPost();
+        $url = $datos['url'];
+        $response = new Response();
 
-        if(empty($url['url'])){
+        if (empty($url)) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -142,115 +124,87 @@ $app->post(
             );
         }
 
-        $phql = 'SELECT * FROM MyApp\Models\Url '
-        .'WHERE url LIKE :url: ORDER BY url';
-
-        $urlData = $app->modelsManager->executeQuery(
-            $phql,
+        $checkUrl = Url::findFirst(
             [
-                'url' => '%' . $url['url'] . '%'
+                'url' => $url,
             ]
         );
-
-        $confirm = '';
-        foreach ($urlData as $item) {
-            $confirm = $item->url;
-        }
         
-        
-        if ($confirm === '') {
-            $response = new Response();
+        if ($checkUrl === false) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
                     'messages' => 'Url is not in database.',
                     ]
-                );
+            );
         }
 
-        if ($confirm === $url['url']) {
+        if ($checkUrl->url === $url) {
             $stringHtml = '';
 
-        //Saca el promedio de los comentarios
-        $phqlAvg = 'SELECT AVG(score) FROM MyApp\Models\Comentario '
-            .'WHERE url_id = :url:';
-
-        $avgScore = $app->modelsManager->executeQuery(
-            $phqlAvg,
-            [
-                'url' => $confirm,
-            ]
-        );
-        $avgScore = (round($avgScore[0]->readAttribute("0"), 1));
-
-        //busca los primeros 10 comentarios
-        $phqlSearchComment = 'SELECT * FROM MyApp\Models\Comentario '
-            .'WHERE url_id = :url: LIMIT 10';
-
-        $comments = $app->modelsManager->executeQuery(
-            $phqlSearchComment,
-            [
-                'url' => $confirm,
-            ]
-        );
-
-        $data = [];
-        foreach ($comments as $comment) {
-            $data [] =
+            //Saca el promedio de los comentarios
+            $avgScore = Comentario::average(
                 [
-                    $comment->comment,
-                    $comment->score,
-                ];
-        }
-
-        if (empty($data)) {
-            $contenido = $app->view->render(
-                'formulario/empty',
-                [
-                    'url'   => $confirm,
+                    'column' => 'score',
                 ]
             );
-        } else {
-            $templatesComments = '';
+            $avgScore = (round($avgScore, 1));
 
-            foreach ($data as $comment) {
-                $templatesComments .= $app->view->render(
+            //busca los primeros 10 comentarios
+            $comments = Comentario::find(
+                [
+                    'order' => 'id',
+                    'limit' => 10,
+                ]
+            );
+
+            if ($comments === false) {
+                $contenido = $app->view->render(
+                'formulario/empty',
+                [
+                    'url'   => $url,
+                ]
+            );
+            } else {
+                $templatesComments = '';
+
+                foreach ($comments as $comment) {
+                    $templatesComments .= $app->view->render(
                     'formulario/comment',
                     [
-                        'comment'   => $comment[0],
-                        'score' => $comment[1],
+                        'comment'   => $comment->comment,
+                        'score' => $comment->score,
                     ]
                 );
-            }
-            $contenido = $app->view->render(
+                }
+                $contenido = $app->view->render(
                 'formulario/some',
                 [
-                    'url'   => $confirm,
+                    'url'   => $url,
                     'score' => $avgScore,
                     'content' => $templatesComments,
                 ]
             );
-        }
+            }
 
-        $stringHtml = $app->view->render(
+            $stringHtml = $app->view->render(
             'formulario/base',
             [
                 'contenido'   => $contenido,
             ]
         );
-        return $stringHtml;
-    }
-
+            return $stringHtml;
+        }
     }
 );
 
 $app->post(
     '/create_comment',
     function () use ($app) {
-        $newComment = $app->request->getPost();
+        $datosPost = $app->request->getPost();
         
         $response = new Response();
-        if(empty($newComment['url'])){
+        if (empty($datosPost['url'])) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -259,7 +213,7 @@ $app->post(
             );
         }
 
-        if(empty($newComment['score'])){
+        if (empty($datosPost['score'])) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -268,19 +222,13 @@ $app->post(
             );
         }
 
-        $checkUrl = 'SELECT COUNT(url) FROM MyApp\Models\Url '
-        .'WHERE url = :url:';
-
-        $checkQuery = $app->modelsManager->executeQuery(
-            $checkUrl,
+        $checkUrl = Url::findFirst(
             [
-                'url' => $newComment['url'],
+                'url' => $datosPost['url'],
             ]
-        );
+            );
 
-        $numberOfResults=($checkQuery[0]->readAttribute("0"));
-
-        if ($numberOfResults < 0) {
+        if ($checkUrl === false) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -289,28 +237,14 @@ $app->post(
             );
         }
 
-        $phql = 'INSERT INTO MyApp\Models\Comentario '
-               .'(url_id, comment, score) '
-               .'VALUES '
-               .'(:url_id:, :comment:, :score:)'
-        ;
+        $newComment = new Comentario();
 
-        $status = $app
-            ->modelsManager
-            ->executeQuery(
-                $phql,
-                [
-                    'url_id' => $newComment['url'],
-                    'comment' => $newComment['comment'],
-                    'score' => $newComment['score'],
-                ]
-            )
-        ;
+        $newComment->url_id = $datosPost['url'];
+        $newComment->comment = $datosPost['comment'];
+        $newComment->score = $datosPost['score'];
 
-        if ($status->success()) {
+        if ($newComment->save()) {
             $response->setStatusCode(201, 'Created');
-
-            $newComment->id = $status->getModel()->id;
 
             $response->setJsonContent(
                 [
@@ -322,7 +256,7 @@ $app->post(
             $response->setStatusCode(409, 'Conflict');
 
             $errors = [];
-            foreach ($status->getMessages() as $message) {
+            foreach ($newComment->getMessages() as $message) {
                 $errors[] = $message->getMessage();
             }
 
