@@ -1,9 +1,0 @@
-[database]
-host     = db
-username = root
-password = root
-dbname   = rating
-
-[phalcon]
-modelsDir      = '../app/models/'
-viewsDir       = '../app/views/'

@@ -6,9 +6,11 @@ use Phalcon\Http\Response;
 use Phalcon\Loader;
 use Phalcon\Mvc\Micro;
 use Phalcon\Mvc\View\Simple;
-use Phalcon\Config\Adapter\Ini;
+use Phalcon\Config;
 
-$config = new Ini('../config.ini');
+require('../config/config.php');
+
+$config = new Config($settings);
 
 $loader = new Loader();
 $loader->registerNamespaces(
