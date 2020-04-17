@@ -159,13 +159,13 @@ $app->post(
                 ]
             );
 
-            if (!$comments) {
+            if (count($comments) < 1) {
                 $contenido = $app->view->render(
-                'formulario/empty',
-                [
-                    'url'   => $url,
-                ]
-            );
+                    'formulario/empty',
+                    [
+                        'url'   => $url,
+                    ]
+                );
 
             } else {
                 $templatesComments = '';
