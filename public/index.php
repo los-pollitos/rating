@@ -61,11 +61,11 @@ $app->post(
         }
         $checkUrl = Url::findFirst(
             [
-                'url' => $newURL,
+                "url = '$newURL'",
             ]
         );
 
-        if ($checkUrl !== false) {
+        if ($checkUrl) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -125,11 +125,11 @@ $app->post(
 
         $checkUrl = Url::findFirst(
             [
-                'url' => $url,
+                "url = '$url'",
             ]
         );
         
-        if ($checkUrl === false) {
+        if (!$checkUrl) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
@@ -144,6 +144,7 @@ $app->post(
             //Saca el promedio de los comentarios
             $avgScore = Comentario::average(
                 [
+                    "url_id = '$url'",
                     'column' => 'score',
                 ]
             );
@@ -152,18 +153,20 @@ $app->post(
             //busca los primeros 10 comentarios
             $comments = Comentario::find(
                 [
+                    "url_id = '$url'",
                     'order' => 'id',
                     'limit' => 10,
                 ]
             );
 
-            if ($comments === false) {
+            if (!$comments) {
                 $contenido = $app->view->render(
                 'formulario/empty',
                 [
                     'url'   => $url,
                 ]
             );
+
             } else {
                 $templatesComments = '';
 
@@ -221,13 +224,15 @@ $app->post(
             );
         }
 
+        $urlToFind = $datosPost['url'];
+
         $checkUrl = Url::findFirst(
             [
-                'url' => $datosPost['url'],
+                "url = '$urlToFind'",
             ]
             );
 
-        if ($checkUrl === false) {
+        if (!$checkUrl) {
             return $response->setJsonContent(
                 [
                     'status' => 'ERROR',
