@@ -1,3 +1,2 @@
-db/*
-!db/rating/
+db/
 /config/config.php
